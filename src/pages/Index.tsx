@@ -183,7 +183,7 @@ const Index = () => {
   if (stage === "home") {
     return (
       <main className="min-h-screen bg-gradient-sky">
-        <div className="container max-w-5xl mx-auto px-4 py-8 sm:py-12">
+        <div className="container max-w-5xl mx-auto px-4 py-8 sm:py-12 pb-32">
           <header className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-primary" />
@@ -238,7 +238,7 @@ const Index = () => {
     const q = questions[qIndex];
     return (
       <main className="min-h-screen bg-gradient-sky">
-        <div className="container max-w-3xl mx-auto px-4 py-6 sm:py-10">
+        <div className="container max-w-3xl mx-auto px-4 py-6 sm:py-10 pb-28">
           <header className="flex items-center justify-between mb-6">
             <Button variant="ghost" onClick={() => setStage("home")} className="rounded-full font-bold">
               <ArrowLeft className="w-4 h-4 mr-1" /> Exit
