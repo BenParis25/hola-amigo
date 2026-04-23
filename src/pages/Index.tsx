@@ -313,6 +313,12 @@ const Index = () => {
             )}
           </div>
         </div>
+        {/* Walking mascot during quiz — pauses while reading the explanation */}
+        <div className="fixed inset-x-0 bottom-0 pointer-events-none px-4 pb-2 z-10">
+          <div className="container max-w-3xl mx-auto">
+            <WalkingMascot character={character} size={64} paused={revealed} />
+          </div>
+        </div>
       </main>
     );
   }
