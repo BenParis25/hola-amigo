@@ -1,19 +1,17 @@
 import { Question } from "@/data/questions";
 
-// If a question doesn't have a hand-written explanation, build a friendly one.
+// Friendly explanation built from the Spanish prompt + correct English meaning.
 export function buildExplanation(q: Question, picked: number | null): string {
   const correctText = q.answers[q.correct];
   const isRight = picked === q.correct;
-
-  // Strip surrounding quotes from the prompt for readability
-  const cleanPrompt = q.prompt.replace(/^["']|["']$/g, "").trim();
+  const spanish = q.prompt.replace(/^["']|["']$/g, "").trim();
 
   if (isRight) {
-    return `¡Exacto! "${correctText}" is the right way to say ${cleanPrompt}. Notice the structure — try saying it out loud!`;
+    return `¡Exacto! "${spanish}" means "${correctText}" in English. Try saying it out loud to lock it in!`;
   }
   if (picked == null) {
-    return `The correct answer is "${correctText}". For ${cleanPrompt}, this is the natural Spanish form.`;
+    return `"${spanish}" means "${correctText}" in English. Take a moment to picture the meaning.`;
   }
   const pickedText = q.answers[picked];
-  return `Not quite — "${pickedText}" doesn't fit. The correct answer is "${correctText}". Tip: match the tense, gender, and verb form to ${cleanPrompt}.`;
+  return `Not quite — "${spanish}" doesn't mean "${pickedText}". The correct meaning is "${correctText}". Tip: watch for tense, gender, and common Spanish idioms.`;
 }

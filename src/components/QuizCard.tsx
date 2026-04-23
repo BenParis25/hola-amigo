@@ -19,7 +19,7 @@ export const QuizCard = ({ question, selected, revealed, onSelect, questionNumbe
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
           Question {questionNumber} of {total}
         </span>
-        <span className="text-xs font-bold text-primary uppercase tracking-wider">English → Español</span>
+        <span className="text-xs font-bold text-primary uppercase tracking-wider">Español → English</span>
       </div>
       <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground mb-6 leading-tight">
         {question.prompt}
