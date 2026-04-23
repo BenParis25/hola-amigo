@@ -1,3 +1,5 @@
+import { createClient } from "@/utils/supabase/client";
+
 export type Question = {
   prompt: string; // Spanish word/phrase to translate
   answers: string[]; // English options
@@ -280,18 +282,50 @@ export const QUESTION_BANK: Record<Level, Question[]> = {
   ],
 };
 
-export function pickQuestions(level: Level, n = 5): Question[] {
-  const pool = [...QUESTION_BANK[level]];
-  for (let i = pool.length - 1; i > 0; i--) {
+type DbQuestionRow = {
+  prompt: string;
+  answers: unknown;
+  correct: number;
+};
+
+const shuffle = <T,>(arr: T[]): T[] => {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
+    [out[i], out[j]] = [out[j], out[i]];
   }
-  return pool.slice(0, n).map((q) => {
-    const indices = q.answers.map((_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
+  return out;
+};
+
+const normalizeDbQuestion = (row: DbQuestionRow): Question | null => {
+  if (!Array.isArray(row.answers)) return null;
+  const answers = row.answers.filter((a): a is string => typeof a === "string");
+  if (answers.length !== row.answers.length || answers.length === 0) return null;
+  if (!Number.isInteger(row.correct) || row.correct < 0 || row.correct >= answers.length) return null;
+  return { prompt: row.prompt, answers, correct: row.correct };
+};
+
+export async function pickQuestions(level: Level, n = 5): Promise<Question[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("questions")
+    .select("prompt, answers, correct")
+    .eq("level", level);
+
+  if (error) {
+    throw new Error(error.message || "Failed to load questions from the database.");
+  }
+
+  const pool = (data ?? [])
+    .map((row) => normalizeDbQuestion(row as DbQuestionRow))
+    .filter((q): q is Question => q !== null);
+
+  if (pool.length < n) {
+    throw new Error(`Not enough questions in DB for ${level}. Need ${n}, found ${pool.length}.`);
+  }
+
+  return shuffle(pool).slice(0, n).map((q) => {
+    const indices = shuffle(q.answers.map((_, i) => i));
     const answers = indices.map((i) => q.answers[i]);
     const correct = indices.indexOf(q.correct);
     return { ...q, answers, correct };

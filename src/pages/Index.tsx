@@ -55,6 +55,7 @@ const Index = () => {
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState<(boolean | null)[]>([]);
+  const [isRoundLoading, setIsRoundLoading] = useState(false);
 
   const score = useMemo(() => results.filter((r) => r === true).length, [results]);
 
@@ -80,14 +81,25 @@ const Index = () => {
     meta.setAttribute("content", "Fun Spanish quizzes from A1 to C2 with a mascot guide. Pick your character and learn at your level.");
   }, []);
 
-  const startRound = (lvl: Level) => {
-    setCurrentLevel(lvl);
-    setQuestions(pickQuestions(lvl, QUESTIONS_PER_ROUND));
-    setResults(Array(QUESTIONS_PER_ROUND).fill(null));
-    setQIndex(0);
-    setSelected(null);
-    setRevealed(false);
-    setStage("quiz");
+  const startRound = async (lvl: Level) => {
+    if (isRoundLoading) return;
+
+    setIsRoundLoading(true);
+    try {
+      const nextQuestions = await pickQuestions(lvl, QUESTIONS_PER_ROUND);
+      setCurrentLevel(lvl);
+      setQuestions(nextQuestions);
+      setResults(Array(nextQuestions.length).fill(null));
+      setQIndex(0);
+      setSelected(null);
+      setRevealed(false);
+      setStage("quiz");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error loading questions.";
+      toast.error("Could not start round", { description: message });
+    } finally {
+      setIsRoundLoading(false);
+    }
   };
 
   const handleSelect = (i: number) => {
@@ -219,7 +231,7 @@ const Index = () => {
           <LevelMap unlocked={unlocked} current={currentLevel} completed={completed} onPick={(lvl) => startRound(lvl)} />
 
           <footer className="mt-10 text-center text-sm text-muted-foreground">
-            Tip: tap your highest unlocked level to keep climbing.
+            {isRoundLoading ? "Loading words from database..." : "Tip: tap your highest unlocked level to keep climbing."}
           </footer>
 
           {/* Mascot strolls along the bottom */}
