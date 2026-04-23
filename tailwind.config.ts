@@ -77,6 +77,7 @@ export default {
         "float": { "0%,100%": { transform: "translateY(0)" }, "50%": { transform: "translateY(-12px)" } },
         "shake": { "0%,100%": { transform: "translateX(0)" }, "25%": { transform: "translateX(-8px)" }, "75%": { transform: "translateX(8px)" } },
         "pop": { "0%": { transform: "scale(1)" }, "50%": { transform: "scale(1.15)" }, "100%": { transform: "scale(1)" } },
+        "walk-bob": { "0%,100%": { translate: "0 0" }, "50%": { translate: "0 -6px" } },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -88,6 +89,7 @@ export default {
         "float": "float 3s ease-in-out infinite",
         "shake": "shake 0.4s ease-in-out",
         "pop": "pop 0.3s ease-out",
+        "walk-bob": "walk-bob 0.4s ease-in-out infinite",
       },
     },
   },
