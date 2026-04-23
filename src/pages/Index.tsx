@@ -7,6 +7,9 @@ import { LevelMap } from "@/components/LevelMap";
 import { QuizCard } from "@/components/QuizCard";
 import { ProgressDots } from "@/components/ProgressDots";
 import { Button } from "@/components/ui/button";
+import { WalkingMascot } from "@/components/WalkingMascot";
+import { buildExplanation } from "@/lib/explain";
+import { Check, X } from "lucide-react";
 import { Sparkles, RotateCcw, Trophy, Heart, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
@@ -218,6 +221,13 @@ const Index = () => {
           <footer className="mt-10 text-center text-sm text-muted-foreground">
             Tip: tap your highest unlocked level to keep climbing.
           </footer>
+
+          {/* Mascot strolls along the bottom */}
+          <div className="fixed inset-x-0 bottom-0 pointer-events-none px-4 pb-2 z-10">
+            <div className="container max-w-5xl mx-auto">
+              <WalkingMascot character={character} size={72} />
+            </div>
+          </div>
         </div>
       </main>
     );
@@ -257,17 +267,41 @@ const Index = () => {
             />
 
             {revealed && (
-              <div className="flex flex-col items-center gap-4 animate-fade-in">
-                <Mascot
-                  character={character}
-                  mood={selected === q.correct ? "cheer" : "sad"}
-                  size="sm"
-                  message={
-                    selected === q.correct
-                      ? undefined
-                      : `Correct: "${q.answers[q.correct]}"`
-                  }
-                />
+              <div className="flex flex-col items-center gap-4 animate-fade-in w-full">
+                {/* Explanation panel */}
+                <div
+                  className={`w-full max-w-2xl rounded-3xl border-2 p-5 sm:p-6 shadow-card flex gap-4 items-start animate-scale-in ${
+                    selected === q.correct ? "border-success bg-success/10" : "border-destructive bg-destructive/10"
+                  }`}
+                >
+                  <div className="shrink-0">
+                    <img
+                      src={character.image}
+                      alt={character.name}
+                      className="w-16 h-16 sm:w-20 sm:h-20 object-contain animate-bounce-in drop-shadow"
+                    />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      {selected === q.correct ? (
+                        <span className="inline-flex items-center gap-1 text-success font-extrabold">
+                          <Check className="w-4 h-4" /> ¡Correcto!
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-destructive font-extrabold">
+                          <X className="w-4 h-4" /> Not quite
+                        </span>
+                      )}
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground font-bold">
+                        {character.name} explains
+                      </span>
+                    </div>
+                    <p className="text-sm sm:text-base leading-relaxed text-foreground">
+                      {buildExplanation(q, selected)}
+                    </p>
+                  </div>
+                </div>
+
                 <Button
                   size="lg"
                   onClick={handleNext}
