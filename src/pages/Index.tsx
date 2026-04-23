@@ -356,7 +356,7 @@ const Index = () => {
           <p className="text-muted-foreground text-lg mb-6">{subtext[o.type]}</p>
 
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="text-6xl font-black bg-gradient-hero bg-clip-text text-transparent">{score}</div>
+            <div className="text-6xl font-black text-primary">{score}</div>
             <div className="text-2xl font-bold text-muted-foreground">/ {questions.length}</div>
           </div>
 
