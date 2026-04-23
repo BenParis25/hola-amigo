@@ -31,15 +31,19 @@ const ProtectedLayout = () => {
   };
 
   return (
-    <>
-      <div className="fixed top-4 right-4 z-50 rounded-2xl border bg-card/95 backdrop-blur px-3 py-2 shadow-card flex items-center gap-3">
-        <span className="text-xs sm:text-sm text-muted-foreground max-w-[160px] truncate">{user?.email}</span>
-        <Button size="sm" variant="outline" onClick={handleSignOut}>
-          Logout
-        </Button>
+    <div className="min-h-screen flex flex-col">
+      <div className="w-full border-b border-border/70 bg-card/85 backdrop-blur">
+        <div className="container max-w-6xl mx-auto px-4 py-2.5 flex items-center justify-end gap-3">
+          <span className="text-xs sm:text-sm text-muted-foreground max-w-[220px] truncate">{user?.email}</span>
+          <Button size="sm" variant="outline" onClick={handleSignOut}>
+            Logout
+          </Button>
+        </div>
       </div>
-      <Outlet />
-    </>
+      <div className="flex-1">
+        <Outlet />
+      </div>
+    </div>
   );
 };
 

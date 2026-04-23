@@ -208,7 +208,7 @@ const Index = () => {
 
           <section className="text-center mb-10">
             <Mascot character={character} mood="wave" size="lg" />
-            <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-3 bg-gradient-hero bg-clip-text text-transparent leading-tight">
+            <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-3 text-gradient-hero leading-tight">
               Your Spanish journey, A1 to C2
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -356,7 +356,7 @@ const Index = () => {
           <p className="text-muted-foreground text-lg mb-6">{subtext[o.type]}</p>
 
           <div className="flex items-center justify-center gap-2 mb-6">
-            <div className="text-6xl font-black text-primary">{score}</div>
+            <div className="text-6xl font-black text-gradient-hero">{score}</div>
             <div className="text-2xl font-bold text-muted-foreground">/ {questions.length}</div>
           </div>
 

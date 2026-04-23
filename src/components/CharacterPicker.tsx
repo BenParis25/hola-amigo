@@ -14,7 +14,7 @@ export const CharacterPicker = ({ selected, onSelect, onConfirm }: Props) => {
   return (
     <div className="w-full max-w-5xl mx-auto animate-fade-in">
       <div className="text-center mb-8">
-        <h1 className="text-4xl sm:text-5xl font-black mb-3 bg-gradient-hero bg-clip-text text-transparent">
+        <h1 className="text-4xl sm:text-5xl font-black mb-3 text-gradient-hero">
           Choose your guide
         </h1>
         <p className="text-muted-foreground text-lg">Pick a companion to learn Spanish with — from kid-friendly to grown-up.</p>

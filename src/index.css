@@ -102,6 +102,16 @@
   .bg-gradient-card { background: var(--gradient-card); }
   .bg-gradient-success { background: var(--gradient-success); }
   .bg-gradient-sky { background: var(--gradient-sky); }
+  .text-gradient-hero { color: hsl(var(--primary)); }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    .text-gradient-hero {
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
+  }
   .shadow-soft { box-shadow: var(--shadow-soft); }
   .shadow-pop { box-shadow: var(--shadow-pop); }
   .shadow-card { box-shadow: var(--shadow-card); }
