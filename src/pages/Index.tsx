@@ -9,6 +9,7 @@ import { ProgressDots } from "@/components/ProgressDots";
 import { Button } from "@/components/ui/button";
 import { WalkingMascot } from "@/components/WalkingMascot";
 import { buildExplanation } from "@/lib/explain";
+import { useAuth } from "@/hooks/useAuth";
 import { Check, X } from "lucide-react";
 import { Sparkles, RotateCcw, Trophy, Heart, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +19,8 @@ type Stage = "pick-character" | "home" | "quiz" | "results";
 const QUESTIONS_PER_ROUND = 5;
 const PASS_THRESHOLD = 5;
 const DROP_THRESHOLD = 3;
-const STORAGE_KEY = "lingo-fox-state-v1";
+const STORAGE_KEY_PREFIX = "lingo-fox-state-v1";
+const LEGACY_STORAGE_KEY = "lingo-fox-state-v1";
 
 type SavedState = {
   characterId: CharacterId;
@@ -28,9 +30,9 @@ type SavedState = {
   streak: number;
 };
 
-const loadState = (): SavedState | null => {
+const loadState = (storageKey: string): SavedState | null => {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey);
     return raw ? (JSON.parse(raw) as SavedState) : null;
   } catch {
     return null;
@@ -38,7 +40,12 @@ const loadState = (): SavedState | null => {
 };
 
 const Index = () => {
-  const saved = useMemo(loadState, []);
+  const { user } = useAuth();
+  const storageKey = useMemo(
+    () => `${STORAGE_KEY_PREFIX}:${user?.id ?? "anonymous"}`,
+    [user?.id],
+  );
+  const saved = useMemo(() => loadState(storageKey), [storageKey]);
 
   const [stage, setStage] = useState<Stage>(saved ? "home" : "pick-character");
   const [pickedId, setPickedId] = useState<CharacterId | null>(saved?.characterId ?? null);
@@ -59,6 +66,30 @@ const Index = () => {
 
   const score = useMemo(() => results.filter((r) => r === true).length, [results]);
 
+  useEffect(() => {
+    // Remove old shared key from pre-user-scoped persistence.
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
+  }, []);
+
+  useEffect(() => {
+    const state = loadState(storageKey);
+    setStage(state ? "home" : "pick-character");
+    setPickedId(state?.characterId ?? null);
+    setCharacterId(state?.characterId ?? "fox");
+    setUnlocked(state?.unlocked ?? "A1.1");
+    setCurrentLevel(state?.current ?? "A1.1");
+    setCompleted(new Set(state?.completed ?? []));
+    setStreak(state?.streak ?? 0);
+
+    // Reset in-progress round state when switching accounts.
+    setQuestions([]);
+    setQIndex(0);
+    setSelected(null);
+    setRevealed(false);
+    setResults([]);
+    setIsRoundLoading(false);
+  }, [storageKey]);
+
   // Persist
   useEffect(() => {
     if (stage === "pick-character") return;
@@ -69,8 +100,8 @@ const Index = () => {
       completed: [...completed],
       streak,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [stage, characterId, unlocked, currentLevel, completed, streak]);
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  }, [stage, characterId, unlocked, currentLevel, completed, streak, storageKey]);
 
   // SEO
   useEffect(() => {
