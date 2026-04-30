@@ -1,5 +1,24 @@
-import 'dotenv/config';
+import fs from 'fs';
 import { createClient as createNodeClient } from '@supabase/supabase-js';
+
+// Lightweight .env.local loader (avoid new dependency)
+function loadDotEnvLocal() {
+  const p = './.env.local';
+  if (!fs.existsSync(p)) return;
+  const content = fs.readFileSync(p, 'utf8');
+  for (const line of content.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eq = trimmed.indexOf('=');
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let val = trimmed.slice(eq + 1).trim();
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+    if (!(key in process.env)) process.env[key] = val;
+  }
+}
+
+loadDotEnvLocal();
 
 async function run() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
