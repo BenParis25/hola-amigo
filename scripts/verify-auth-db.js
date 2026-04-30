@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { createClient } from '../src/utils/supabase/client';
+import { createClient as createNodeClient } from '@supabase/supabase-js';
 
 async function run() {
   const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
@@ -17,8 +17,18 @@ async function run() {
     process.exit(2);
   }
 
-  // Create a lightweight client (browser-style) using the project's factory
-  const supabase = createClient();
+  // Create a Node-friendly Supabase client using env vars
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase URL or anon key in env (VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY).');
+    process.exit(2);
+  }
+
+  const supabase = createNodeClient({
+    supabaseUrl,
+    supabaseKey,
+  });
 
   console.log('Signing in test user:', email);
   const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
