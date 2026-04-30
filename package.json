@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "verify-db-auth": "node ./scripts/verify-auth-db.js",
     "bundle-migrations": "node ./scripts/generate-sql-bundle.js"
+    ,"delete-user": "node ./scripts/delete-user.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
