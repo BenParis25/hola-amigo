@@ -17,7 +17,7 @@ export const CharacterPicker = ({ selected, onSelect, onConfirm }: Props) => {
         <h1 className="text-4xl sm:text-5xl font-black mb-3 text-gradient-hero">
           Choose your guide
         </h1>
-        <p className="text-muted-foreground text-lg">Pick a companion to learn Spanish with — from kid-friendly to grown-up.</p>
+        <p className="text-muted-foreground text-lg">Pick the mascot you want beside you. Your age group comes next.</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">

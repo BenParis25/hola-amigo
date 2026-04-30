@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { LEVEL_ORDER, Level, Question, pickQuestions } from "@/data/questions";
-import { CHARACTERS, CharacterId, getCharacter } from "@/data/characters";
+import { LEVEL_ORDER, Level, Question, getNextLevel, getPreviousLevel, pickQuestions } from "@/data/questions";
+import { CharacterId, getCharacter } from "@/data/characters";
+import { AgeGroupId, getAgeGroup } from "@/data/profile";
 import { Mascot } from "@/components/Mascot";
 import { CharacterPicker } from "@/components/CharacterPicker";
+import { AgeGroupPicker } from "@/components/AgeGroupPicker";
 import { LevelMap } from "@/components/LevelMap";
 import { QuizCard } from "@/components/QuizCard";
 import { ProgressDots } from "@/components/ProgressDots";
@@ -14,7 +16,7 @@ import { Check, X } from "lucide-react";
 import { Sparkles, RotateCcw, Trophy, Heart, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-type Stage = "pick-character" | "home" | "quiz" | "results";
+type Stage = "pick-character" | "pick-age-group" | "home" | "quiz" | "results";
 
 const QUESTIONS_PER_ROUND = 5;
 const PASS_THRESHOLD = 5;
@@ -24,10 +26,16 @@ const LEGACY_STORAGE_KEY = "lingo-fox-state-v1";
 
 type SavedState = {
   characterId: CharacterId;
+  ageGroup: AgeGroupId | null;
   unlocked: Level;
   current: Level;
   completed: Level[];
   streak: number;
+};
+
+const getInitialStage = (state: SavedState | null): Stage => {
+  if (!state) return "pick-character";
+  return state.ageGroup ? "home" : "pick-age-group";
 };
 
 const loadState = (storageKey: string): SavedState | null => {
@@ -47,13 +55,15 @@ const Index = () => {
   );
   const saved = useMemo(() => loadState(storageKey), [storageKey]);
 
-  const [stage, setStage] = useState<Stage>(saved ? "home" : "pick-character");
+  const [stage, setStage] = useState<Stage>(getInitialStage(saved));
   const [pickedId, setPickedId] = useState<CharacterId | null>(saved?.characterId ?? null);
   const [characterId, setCharacterId] = useState<CharacterId>(saved?.characterId ?? "fox");
+  const [ageGroup, setAgeGroup] = useState<AgeGroupId | null>(saved?.ageGroup ?? null);
   const character = getCharacter(characterId);
 
-  const [unlocked, setUnlocked] = useState<Level>(saved?.unlocked ?? "A1.1");
-  const [currentLevel, setCurrentLevel] = useState<Level>(saved?.current ?? "A1.1");
+  const [unlocked, setUnlocked] = useState<Level>(saved?.unlocked ?? "A1");
+  const [currentLevel, setCurrentLevel] = useState<Level>(saved?.current ?? "A1");
+  const [roundLevel, setRoundLevel] = useState<Level>(saved?.current ?? "A1");
   const [completed, setCompleted] = useState<Set<Level>>(new Set(saved?.completed ?? []));
   const [streak, setStreak] = useState(saved?.streak ?? 0);
 
@@ -73,11 +83,13 @@ const Index = () => {
 
   useEffect(() => {
     const state = loadState(storageKey);
-    setStage(state ? "home" : "pick-character");
+    setStage(getInitialStage(state));
     setPickedId(state?.characterId ?? null);
     setCharacterId(state?.characterId ?? "fox");
-    setUnlocked(state?.unlocked ?? "A1.1");
-    setCurrentLevel(state?.current ?? "A1.1");
+    setAgeGroup(state?.ageGroup ?? null);
+    setUnlocked(state?.unlocked ?? "A1");
+    setCurrentLevel(state?.current ?? "A1");
+    setRoundLevel(state?.current ?? "A1");
     setCompleted(new Set(state?.completed ?? []));
     setStreak(state?.streak ?? 0);
 
@@ -95,13 +107,14 @@ const Index = () => {
     if (stage === "pick-character") return;
     const data: SavedState = {
       characterId,
+      ageGroup,
       unlocked,
       current: currentLevel,
       completed: [...completed],
       streak,
     };
     localStorage.setItem(storageKey, JSON.stringify(data));
-  }, [stage, characterId, unlocked, currentLevel, completed, streak, storageKey]);
+  }, [stage, characterId, ageGroup, unlocked, currentLevel, completed, streak, storageKey]);
 
   // SEO
   useEffect(() => {
@@ -118,6 +131,7 @@ const Index = () => {
     setIsRoundLoading(true);
     try {
       const nextQuestions = await pickQuestions(lvl, QUESTIONS_PER_ROUND);
+      setRoundLevel(lvl);
       setCurrentLevel(lvl);
       setQuestions(nextQuestions);
       setResults(Array(nextQuestions.length).fill(null));
@@ -160,22 +174,27 @@ const Index = () => {
 
   const finalize = () => {
     const finalScore = results.filter((r) => r === true).length;
-    const lvlIdx = LEVEL_ORDER.indexOf(currentLevel);
+    const nextLevel = getNextLevel(roundLevel);
+    const previousLevel = getPreviousLevel(roundLevel);
     if (finalScore >= PASS_THRESHOLD) {
-      // mark complete + unlock next
-      setCompleted((prev) => new Set(prev).add(currentLevel));
-      if (lvlIdx < LEVEL_ORDER.length - 1) {
-        const next = LEVEL_ORDER[lvlIdx + 1];
-        const unlockedIdx = LEVEL_ORDER.indexOf(unlocked);
-        if (lvlIdx + 1 > unlockedIdx) setUnlocked(next);
+      setCompleted((prev) => {
+        const next = new Set(prev);
+        next.add(roundLevel);
+        return next;
+      });
+      if (nextLevel) {
+        setUnlocked((prevUnlocked) => {
+          const currentUnlockedIdx = LEVEL_ORDER.indexOf(prevUnlocked);
+          const nextIdx = LEVEL_ORDER.indexOf(nextLevel);
+          return nextIdx > currentUnlockedIdx ? nextLevel : prevUnlocked;
+        });
+        setCurrentLevel(nextLevel);
       }
-    } else if (finalScore <= DROP_THRESHOLD && lvlIdx > 0) {
-      // drop a level (do not affect highest unlocked)
-      const prev = LEVEL_ORDER[lvlIdx - 1];
-      setCurrentLevel(prev);
+    } else if (finalScore <= DROP_THRESHOLD && previousLevel) {
+      setCurrentLevel(previousLevel);
       setCompleted((prevSet) => {
         const ns = new Set(prevSet);
-        ns.delete(currentLevel); // they need to re-pass current
+        ns.delete(roundLevel);
         return ns;
       });
     }
@@ -184,17 +203,18 @@ const Index = () => {
 
   const finishOutcome = useMemo(() => {
     if (stage !== "results") return null;
-    const lvlIdx = LEVEL_ORDER.indexOf(currentLevel);
-    if (score >= PASS_THRESHOLD && lvlIdx < LEVEL_ORDER.length - 1) {
-      return { type: "advance" as const, nextLevel: LEVEL_ORDER[lvlIdx + 1] };
+    if (score >= PASS_THRESHOLD) {
+      if (getNextLevel(currentLevel)) {
+        return { type: "advance" as const, nextLevel: currentLevel };
+      }
+      return { type: "mastered" as const, nextLevel: currentLevel };
     }
-    if (score >= PASS_THRESHOLD) return { type: "mastered" as const, nextLevel: currentLevel };
-    if (score <= DROP_THRESHOLD && lvlIdx > 0) {
-      return { type: "drop" as const, nextLevel: currentLevel }; // currentLevel was already lowered
+    if (score <= DROP_THRESHOLD && roundLevel !== currentLevel) {
+      return { type: "drop" as const, nextLevel: currentLevel };
     }
     if (score <= DROP_THRESHOLD) return { type: "retry" as const, nextLevel: currentLevel };
     return { type: "stay" as const, nextLevel: currentLevel };
-  }, [stage, score, currentLevel]);
+  }, [stage, score, currentLevel, roundLevel]);
 
   // ---------- PICK CHARACTER ----------
   if (stage === "pick-character") {
@@ -213,8 +233,32 @@ const Index = () => {
             onConfirm={() => {
               if (!pickedId) return;
               setCharacterId(pickedId);
-              setStage("home");
+              setStage("pick-age-group");
               toast.success(`${getCharacter(pickedId).name} is ready to teach!`);
+            }}
+          />
+        </div>
+      </main>
+    );
+  }
+
+  // ---------- AGE GROUP ----------
+  if (stage === "pick-age-group") {
+    return (
+      <main className="min-h-screen bg-gradient-sky">
+        <div className="container max-w-6xl mx-auto px-4 py-10 sm:py-14">
+          <header className="flex items-center justify-between mb-10">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-6 h-6 text-primary" />
+              <span className="font-extrabold text-xl tracking-tight">Lingo Fox</span>
+            </div>
+          </header>
+          <AgeGroupPicker
+            selected={ageGroup}
+            onSelect={setAgeGroup}
+            onConfirm={() => {
+              if (!ageGroup) return;
+              void startRound(currentLevel);
             }}
           />
         </div>
@@ -224,6 +268,7 @@ const Index = () => {
 
   // ---------- HOME ----------
   if (stage === "home") {
+    const ageGroupInfo = getAgeGroup(ageGroup);
     return (
       <main className="min-h-screen bg-gradient-sky">
         <div className="container max-w-5xl mx-auto px-4 py-8 sm:py-12 pb-32">
@@ -242,6 +287,11 @@ const Index = () => {
                 <span className="text-sm font-bold">{character.name}</span>
                 <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
+              {ageGroupInfo && (
+                <div className="hidden sm:flex items-center gap-1.5 bg-card rounded-full px-3 py-1.5 shadow-card">
+                  <span className="text-sm font-bold">{ageGroupInfo.label}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1.5 bg-card rounded-full px-3 py-1.5 shadow-card">
                 <Heart className="w-4 h-4 text-destructive fill-destructive" />
                 <span className="text-sm font-bold">5</span>
@@ -252,12 +302,22 @@ const Index = () => {
           <section className="text-center mb-10">
             <Mascot character={character} mood="wave" size="lg" />
             <h1 className="text-4xl sm:text-5xl font-black mt-6 mb-3 text-gradient-hero leading-tight">
-              Your Spanish journey, A1 to C2
+              Your Spanish journey starts at A1
             </h1>
             <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
               5 questions per round. All 5 right? You level up. 3 or fewer? We step back to strengthen the basics.
             </p>
           </section>
+
+          <div className="flex justify-center mb-6">
+            <Button
+              size="lg"
+              onClick={() => startRound(currentLevel)}
+              className="rounded-full font-extrabold px-8 shadow-pop bg-gradient-hero text-primary-foreground border-0 hover:opacity-90"
+            >
+              {`Continue ${currentLevel} →`}
+            </Button>
+          </div>
 
           <LevelMap unlocked={unlocked} current={currentLevel} completed={completed} onPick={(lvl) => startRound(lvl)} />
 
@@ -287,7 +347,7 @@ const Index = () => {
               <ArrowLeft className="w-4 h-4 mr-1" /> Exit
             </Button>
             <div className="flex items-center gap-2 rounded-full px-4 py-2 font-bold text-sm bg-gradient-hero text-primary-foreground shadow-pop">
-              <span>{currentLevel}</span>
+              <span>{roundLevel}</span>
             </div>
             <div className="flex items-center gap-1.5 bg-card rounded-full px-3 py-1.5 shadow-card">
               <Sparkles className="w-4 h-4 text-secondary" />
@@ -379,8 +439,8 @@ const Index = () => {
     advance: `You aced it! Moving up to ${o.nextLevel}.`,
     mastered: "You completed the highest level. Truly impressive!",
     drop: `We've stepped back to ${o.nextLevel} to rebuild confidence.`,
-    retry: `Let's run through ${currentLevel} once more.`,
-    stay: `You passed enough to stay on ${currentLevel}. Try once more for a perfect 5/5.`,
+    retry: `Let's run through ${roundLevel} once more.`,
+    stay: `You passed enough to stay on ${roundLevel}. Try once more for a perfect 5/5.`,
   };
   const isWin = o.type === "advance" || o.type === "mastered";
 
@@ -420,7 +480,7 @@ const Index = () => {
               {o.type === "advance"
                 ? `Start ${o.nextLevel} →`
                 : o.type === "mastered"
-                ? "Replay C2.3"
+                ? `Replay ${o.nextLevel}`
                 : `Try ${o.nextLevel} again`}
             </Button>
             <Button size="lg" variant="outline" onClick={() => setStage("home")} className="rounded-full font-bold">

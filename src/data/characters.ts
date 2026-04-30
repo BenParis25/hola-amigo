@@ -16,7 +16,7 @@ export type Character = {
   id: CharacterId;
   name: string;
   image: string;
-  audience: string; // "Ages 5–10" etc.
+  audience: string;
   vibe: string;
   accent: string; // tailwind class for accent ring
   messages: CharacterMessages;
@@ -27,7 +27,7 @@ export const CHARACTERS: Character[] = [
     id: "fox",
     name: "Lumi",
     image: foxImg,
-    audience: "Ages 5–10",
+    audience: "Playful guide",
     vibe: "Playful & sweet",
     accent: "ring-primary",
     messages: {
@@ -41,7 +41,7 @@ export const CHARACTERS: Character[] = [
     id: "panda",
     name: "Bao",
     image: pandaImg,
-    audience: "Ages 11–17",
+    audience: "Chill guide",
     vibe: "Chill & fun",
     accent: "ring-accent",
     messages: {
@@ -55,7 +55,7 @@ export const CHARACTERS: Character[] = [
     id: "cat",
     name: "Mira",
     image: catImg,
-    audience: "Young adult",
+    audience: "Focused guide",
     vibe: "Calm & focused",
     accent: "ring-secondary",
     messages: {
@@ -69,7 +69,7 @@ export const CHARACTERS: Character[] = [
     id: "owl",
     name: "Don Hugo",
     image: owlImg,
-    audience: "Adult / Pro",
+    audience: "Wise guide",
     vibe: "Wise & sophisticated",
     accent: "ring-foreground",
     messages: {

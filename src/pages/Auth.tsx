@@ -74,7 +74,7 @@ const Auth = () => {
       <Card className="w-full max-w-md border-2 shadow-pop">
         <CardHeader>
           <CardTitle>Welcome to Lingo Fox</CardTitle>
-          <CardDescription>Create an account or sign in to continue your progress.</CardDescription>
+          <CardDescription>Create an account or sign in, then pick a character and age group to begin.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
