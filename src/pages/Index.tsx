@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LEVEL_ORDER, Level, Question, getNextLevel, getPreviousLevel, pickQuestions } from "@/data/questions";
 import { CharacterId, getCharacter } from "@/data/characters";
 import { AgeGroupId, getAgeGroup } from "@/data/profile";
+import { DEFAULT_PROGRESS, loadUserProgress, saveUserProgress } from "@/data/progress";
 import { Mascot } from "@/components/Mascot";
 import { CharacterPicker } from "@/components/CharacterPicker";
 import { AgeGroupPicker } from "@/components/AgeGroupPicker";
@@ -21,51 +22,26 @@ type Stage = "pick-character" | "pick-age-group" | "home" | "quiz" | "results";
 const QUESTIONS_PER_ROUND = 5;
 const PASS_THRESHOLD = 5;
 const DROP_THRESHOLD = 3;
-const STORAGE_KEY_PREFIX = "lingo-fox-state-v1";
-const LEGACY_STORAGE_KEY = "lingo-fox-state-v1";
 
-type SavedState = {
-  characterId: CharacterId;
-  ageGroup: AgeGroupId | null;
-  unlocked: Level;
-  current: Level;
-  completed: Level[];
-  streak: number;
-};
-
-const getInitialStage = (state: SavedState | null): Stage => {
-  if (!state) return "pick-character";
-  return state.ageGroup ? "home" : "pick-age-group";
-};
-
-const loadState = (storageKey: string): SavedState | null => {
-  try {
-    const raw = localStorage.getItem(storageKey);
-    return raw ? (JSON.parse(raw) as SavedState) : null;
-  } catch {
-    return null;
-  }
+const getInitialStage = (hasProfile: boolean, ageGroup: AgeGroupId | null): Stage => {
+  if (!hasProfile) return "pick-character";
+  return ageGroup ? "home" : "pick-age-group";
 };
 
 const Index = () => {
   const { user } = useAuth();
-  const storageKey = useMemo(
-    () => `${STORAGE_KEY_PREFIX}:${user?.id ?? "anonymous"}`,
-    [user?.id],
-  );
-  const saved = useMemo(() => loadState(storageKey), [storageKey]);
-
-  const [stage, setStage] = useState<Stage>(getInitialStage(saved));
-  const [pickedId, setPickedId] = useState<CharacterId | null>(saved?.characterId ?? null);
-  const [characterId, setCharacterId] = useState<CharacterId>(saved?.characterId ?? "fox");
-  const [ageGroup, setAgeGroup] = useState<AgeGroupId | null>(saved?.ageGroup ?? null);
+  const [stage, setStage] = useState<Stage>("pick-character");
+  const [pickedId, setPickedId] = useState<CharacterId | null>(null);
+  const [characterId, setCharacterId] = useState<CharacterId>(DEFAULT_PROGRESS.characterId);
+  const [ageGroup, setAgeGroup] = useState<AgeGroupId | null>(DEFAULT_PROGRESS.ageGroup);
   const character = getCharacter(characterId);
 
-  const [unlocked, setUnlocked] = useState<Level>(saved?.unlocked ?? "A1");
-  const [currentLevel, setCurrentLevel] = useState<Level>(saved?.current ?? "A1");
-  const [roundLevel, setRoundLevel] = useState<Level>(saved?.current ?? "A1");
-  const [completed, setCompleted] = useState<Set<Level>>(new Set(saved?.completed ?? []));
-  const [streak, setStreak] = useState(saved?.streak ?? 0);
+  const [unlocked, setUnlocked] = useState<Level>(DEFAULT_PROGRESS.unlocked);
+  const [currentLevel, setCurrentLevel] = useState<Level>(DEFAULT_PROGRESS.current);
+  const [roundLevel, setRoundLevel] = useState<Level>(DEFAULT_PROGRESS.current);
+  const [completed, setCompleted] = useState<Set<Level>>(new Set(DEFAULT_PROGRESS.completed));
+  const [streak, setStreak] = useState(DEFAULT_PROGRESS.streak);
+  const [isProgressLoaded, setIsProgressLoaded] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [qIndex, setQIndex] = useState(0);
@@ -77,21 +53,60 @@ const Index = () => {
   const score = useMemo(() => results.filter((r) => r === true).length, [results]);
 
   useEffect(() => {
-    // Remove old shared key from pre-user-scoped persistence.
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
-  }, []);
+    let isMounted = true;
 
-  useEffect(() => {
-    const state = loadState(storageKey);
-    setStage(getInitialStage(state));
-    setPickedId(state?.characterId ?? null);
-    setCharacterId(state?.characterId ?? "fox");
-    setAgeGroup(state?.ageGroup ?? null);
-    setUnlocked(state?.unlocked ?? "A1");
-    setCurrentLevel(state?.current ?? "A1");
-    setRoundLevel(state?.current ?? "A1");
-    setCompleted(new Set(state?.completed ?? []));
-    setStreak(state?.streak ?? 0);
+    const hydrateProgress = async () => {
+      if (!user?.id) {
+        if (!isMounted) return;
+        setStage("pick-character");
+        setPickedId(null);
+        setCharacterId(DEFAULT_PROGRESS.characterId);
+        setAgeGroup(DEFAULT_PROGRESS.ageGroup);
+        setUnlocked(DEFAULT_PROGRESS.unlocked);
+        setCurrentLevel(DEFAULT_PROGRESS.current);
+        setRoundLevel(DEFAULT_PROGRESS.current);
+        setCompleted(new Set(DEFAULT_PROGRESS.completed));
+        setStreak(DEFAULT_PROGRESS.streak);
+        setIsProgressLoaded(true);
+        return;
+      }
+
+      try {
+        const progress = await loadUserProgress(user.id);
+        if (!isMounted) return;
+
+        if (!progress) {
+          setPickedId(null);
+          setCharacterId(DEFAULT_PROGRESS.characterId);
+          setAgeGroup(DEFAULT_PROGRESS.ageGroup);
+          setUnlocked(DEFAULT_PROGRESS.unlocked);
+          setCurrentLevel(DEFAULT_PROGRESS.current);
+          setRoundLevel(DEFAULT_PROGRESS.current);
+          setCompleted(new Set(DEFAULT_PROGRESS.completed));
+          setStreak(DEFAULT_PROGRESS.streak);
+          setStage("pick-character");
+          return;
+        }
+
+        setPickedId(progress.characterId);
+        setCharacterId(progress.characterId);
+        setAgeGroup(progress.ageGroup);
+        setUnlocked(progress.unlocked);
+        setCurrentLevel(progress.current);
+        setRoundLevel(progress.current);
+        setCompleted(new Set(progress.completed));
+        setStreak(progress.streak);
+        setStage(getInitialStage(true, progress.ageGroup));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to load progress.";
+        toast.error("Could not load saved progress", { description: message });
+      } finally {
+        if (isMounted) setIsProgressLoaded(true);
+      }
+    };
+
+    setIsProgressLoaded(false);
+    void hydrateProgress();
 
     // Reset in-progress round state when switching accounts.
     setQuestions([]);
@@ -100,12 +115,16 @@ const Index = () => {
     setRevealed(false);
     setResults([]);
     setIsRoundLoading(false);
-  }, [storageKey]);
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id]);
 
   // Persist
   useEffect(() => {
-    if (stage === "pick-character") return;
-    const data: SavedState = {
+    if (!isProgressLoaded || !user?.id) return;
+
+    const data = {
       characterId,
       ageGroup,
       unlocked,
@@ -113,8 +132,11 @@ const Index = () => {
       completed: [...completed],
       streak,
     };
-    localStorage.setItem(storageKey, JSON.stringify(data));
-  }, [stage, characterId, ageGroup, unlocked, currentLevel, completed, streak, storageKey]);
+    void saveUserProgress(user.id, data).catch((error) => {
+      const message = error instanceof Error ? error.message : "Failed to save progress.";
+      toast.error("Could not save progress", { description: message });
+    });
+  }, [isProgressLoaded, user?.id, characterId, ageGroup, unlocked, currentLevel, completed, streak]);
 
   // SEO
   useEffect(() => {
