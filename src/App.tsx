@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ProtectedLayout from "@/components/ProtectedLayout";
 import Auth from "./pages/Auth.tsx";
+import ResetPassword from "./pages/ResetPassword";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import SupabaseTodos from "./pages/SupabaseTodos.tsx";
@@ -24,6 +25,7 @@ const App = () => (
       >
         <Routes>
           <Route path="/auth" element={<Auth />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<Index />} />
             <Route path="/supabase" element={<SupabaseTodos />} />

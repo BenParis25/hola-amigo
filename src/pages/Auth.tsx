@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { session, isLoading, signIn, signUp } = useAuth();
+  const { session, isLoading, signIn, signUp, resetPassword } = useAuth();
 
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -18,6 +18,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
 
   if (!isLoading && session) {
     return <Navigate to="/" replace />;
@@ -69,6 +70,28 @@ const Auth = () => {
     setIsSubmitting(false);
   };
 
+  const handleResetPassword = async () => {
+    const email = resetEmail || loginEmail;
+    if (!email) {
+      toast.error("Enter your email first");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await resetPassword(email);
+
+    if (error) {
+      toast.error("Could not send reset email", { description: error.message });
+    } else {
+      toast.success("Reset email sent", {
+        description: "Check your inbox and open the link to set a new password.",
+      });
+      setResetEmail(email);
+    }
+
+    setIsSubmitting(false);
+  };
+
   return (
     <main className="min-h-screen bg-gradient-sky flex items-center justify-center px-4 py-10">
       <Card className="w-full max-w-md border-2 shadow-pop">
@@ -91,7 +114,10 @@ const Auth = () => {
                     id="login-email"
                     type="email"
                     value={loginEmail}
-                    onChange={(event) => setLoginEmail(event.target.value)}
+                    onChange={(event) => {
+                      setLoginEmail(event.target.value);
+                      setResetEmail(event.target.value);
+                    }}
                     required
                   />
                 </div>
@@ -105,9 +131,14 @@ const Auth = () => {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Signing in..." : "Login"}
-                </Button>
+                <div className="space-y-3">
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? "Signing in..." : "Login"}
+                  </Button>
+                  <Button type="button" variant="outline" className="w-full" disabled={isSubmitting} onClick={handleResetPassword}>
+                    Forgot password?
+                  </Button>
+                </div>
               </form>
             </TabsContent>
 
