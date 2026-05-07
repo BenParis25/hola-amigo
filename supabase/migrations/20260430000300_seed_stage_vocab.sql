@@ -31,58 +31,46 @@ end;
 $$;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'A1', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'A1', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'A1.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'A2', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'A2', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'A2.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'B1', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'B1', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'B1.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'B2', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'B2', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'B2.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'C1', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'C1', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'C1.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 insert into public.questions (difficulty_level, category, spanish_word, english_word)
-select 'C2', coalesce(category, 'general'), spanish_word, english_word
+select distinct 'C2', coalesce(category, 'general'), spanish_word, english_word
 from public.questions
 where difficulty_level like 'C2.%'
 on conflict (difficulty_level, spanish_word)
-do update set
-  english_word = excluded.english_word,
-  category = excluded.category;
+do nothing;
 
 select public.seed_stage_word_bank(
   'A1',
