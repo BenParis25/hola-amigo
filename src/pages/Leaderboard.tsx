@@ -57,14 +57,16 @@ const Leaderboard = () => {
           ) : rows.length === 0 ? (
             <div className="text-center text-muted-foreground">No leaderboard data yet.</div>
           ) : (
-            <div className="grid grid-cols-6 gap-3 items-center text-sm font-medium px-2">
+            <div className="grid grid-cols-7 gap-3 items-center text-sm font-medium px-2">
+              <div className="col-span-1 text-center">#</div>
               <div className="col-span-3">Player</div>
               <div className="col-span-1 text-center">Level</div>
               <div className="col-span-1 text-center">% Correct</div>
               <div className="col-span-1 text-right">Rounds</div>
 
-              {rows.map((r) => (
+              {rows.map((r, i) => (
                 <div key={r.user_id} className="contents">
+                  <div className="col-span-1 text-center font-bold">{i + 1}</div>
                   <div className="col-span-3 truncate">{r.user_email}</div>
                   <div className="col-span-1 text-center">{r.current_level ?? "—"}</div>
                   <div className="col-span-1 text-center">{r.pct_correct ?? "—"}%</div>
