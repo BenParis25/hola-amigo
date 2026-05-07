@@ -53,6 +53,12 @@ export const QuizCard = ({ question, selected, revealed, onSelect, questionNumbe
           );
         })}
       </div>
+      {revealed && question.germanWord && (
+        <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-800 rounded-2xl animate-scale-in">
+          <p className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-2">🇩🇪 Bonus: German</p>
+          <p className="text-lg font-bold text-amber-900 dark:text-amber-100">{question.germanWord}</p>
+        </div>
+      )}
     </div>
   );
 };

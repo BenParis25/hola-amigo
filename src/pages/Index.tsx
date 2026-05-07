@@ -16,6 +16,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Check, X } from "lucide-react";
 import { Sparkles, RotateCcw, Trophy, Heart, ArrowLeft, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { createClient } from "@/utils/supabase/client";
 
 type Stage = "pick-character" | "pick-age-group" | "home" | "quiz" | "results";
 
@@ -30,6 +32,7 @@ const getInitialStage = (hasProfile: boolean, ageGroup: AgeGroupId | null): Stag
 
 const Index = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stage, setStage] = useState<Stage>("pick-character");
   const [pickedId, setPickedId] = useState<CharacterId | null>(null);
   const [characterId, setCharacterId] = useState<CharacterId>(DEFAULT_PROGRESS.characterId);
@@ -198,6 +201,15 @@ const Index = () => {
     const finalScore = results.filter((r) => r === true).length;
     const nextLevel = getNextLevel(roundLevel);
     const previousLevel = getPreviousLevel(roundLevel);
+
+    // compute the user's new current level (snapshot) for recording
+    let newCurrent = currentLevel;
+    if (finalScore >= PASS_THRESHOLD) {
+      if (nextLevel) newCurrent = nextLevel;
+    } else if (finalScore <= DROP_THRESHOLD && previousLevel) {
+      newCurrent = previousLevel;
+    }
+
     if (finalScore >= PASS_THRESHOLD) {
       setCompleted((prev) => {
         const next = new Set(prev);
@@ -220,6 +232,21 @@ const Index = () => {
         return ns;
       });
     }
+
+    // Record this round to the DB for leaderboard aggregation
+    if (user?.id) {
+      const supabase = createClient();
+      void supabase.from("user_rounds").insert({
+        user_id: user.id,
+        played_level: roundLevel,
+        current_level: newCurrent,
+        correct: finalScore,
+        total: questions.length,
+      }).then(({ error }) => {
+        if (error) console.error("Failed to record round:", error.message);
+      });
+    }
+
     setStage("results");
   };
 
@@ -309,6 +336,9 @@ const Index = () => {
                 <span className="text-sm font-bold">{character.name}</span>
                 <RefreshCw className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
+              <Button size="sm" variant="outline" onClick={() => navigate('/leaderboard')}>
+                Leaderboard
+              </Button>
               {ageGroupInfo && (
                 <div className="hidden sm:flex items-center gap-1.5 bg-card rounded-full px-3 py-1.5 shadow-card">
                   <span className="text-sm font-bold">{ageGroupInfo.label}</span>

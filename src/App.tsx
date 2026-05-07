@@ -7,6 +7,7 @@ import ProtectedLayout from "@/components/ProtectedLayout";
 import Auth from "./pages/Auth.tsx";
 import ResetPassword from "./pages/ResetPassword";
 import Index from "./pages/Index.tsx";
+import Leaderboard from "./pages/Leaderboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import SupabaseTodos from "./pages/SupabaseTodos.tsx";
 
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<Index />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/supabase" element={<SupabaseTodos />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

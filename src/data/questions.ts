@@ -5,6 +5,7 @@ export type Question = {
   answers: string[];
   correct: number;
   category?: string;
+  germanWord?: string;
 };
 
 export type Level =
@@ -61,12 +62,14 @@ type DbWordRow = {
   spanish_word?: string;
   english_word?: string;
   category?: string;
+  german_word?: string;
 };
 
 type SupabaseWordRow = {
   spanish_word?: string;
   english_word?: string;
   category?: string;
+  german_word?: string;
 };
 
 const shuffle = <T,>(arr: T[]): T[] => {
@@ -78,12 +81,17 @@ const shuffle = <T,>(arr: T[]): T[] => {
   return out;
 };
 
-const normalizeDbWord = (row: DbWordRow): { spanish_word: string; english_word: string; category: string } | null => {
+const normalizeDbWord = (row: DbWordRow): { spanish_word: string; english_word: string; category: string; german_word?: string } | null => {
   if (typeof row.spanish_word !== "string" || typeof row.english_word !== "string") return null;
   const spanishWord = row.spanish_word.trim();
   const englishWord = row.english_word.trim();
   if (!spanishWord || !englishWord) return null;
-  return { spanish_word: spanishWord, english_word: englishWord, category: row.category?.trim() ?? "general" };
+  return { 
+    spanish_word: spanishWord, 
+    english_word: englishWord, 
+    category: row.category?.trim() ?? "general",
+    german_word: row.german_word?.trim()
+  };
 };
 
 const mergeRows = (primary: SupabaseWordRow[], fallback: SupabaseWordRow[]): SupabaseWordRow[] => {
@@ -105,7 +113,7 @@ const loadRowsForPattern = async (levelPattern: string, includeCategory: boolean
 
   const query = supabase
     .from("questions")
-    .select(includeCategory ? "spanish_word, english_word, category" : "spanish_word, english_word");
+    .select(includeCategory ? "spanish_word, english_word, category, german_word" : "spanish_word, english_word, german_word");
 
   const { data, error } = levelPattern.endsWith("%")
     ? await query.like("difficulty_level", levelPattern)
@@ -115,10 +123,11 @@ const loadRowsForPattern = async (levelPattern: string, includeCategory: boolean
     return (data ?? []) as SupabaseWordRow[];
   }
 
-  if (!/column questions\.category does not exist/i.test(error.message || "")) {
+  if (!/column questions\.(category|german_word) does not exist/i.test(error.message || "")) {
     throw new Error(error.message || "Failed to load questions from the database.");
   }
 
+  // Fallback query without new columns
   const fallback = await supabase
     .from("questions")
     .select("spanish_word, english_word")
@@ -140,7 +149,7 @@ export async function pickQuestions(level: Level, n = 5): Promise<Question[]> {
 
   const pool = rows
     .map((row) => normalizeDbWord(row as DbWordRow))
-    .filter((q): q is { spanish_word: string; english_word: string; category: string } => q !== null);
+    .filter((q): q is { spanish_word: string; english_word: string; category: string; german_word?: string } => q !== null);
 
   if (pool.length < n) {
     throw new Error(`Not enough questions in DB for ${level}. Need ${n}, found ${pool.length}.`);
@@ -151,13 +160,43 @@ export async function pickQuestions(level: Level, n = 5): Promise<Question[]> {
     throw new Error(`Need at least 4 unique English words in DB for ${level}. Found ${allEnglishOptions.length}.`);
   }
 
-  return shuffle(pool).slice(0, n).map(({ spanish_word, english_word, category }) => {
+  return shuffle(pool).slice(0, n).map(({ spanish_word, english_word, category, german_word }) => {
     const wrongAnswers = shuffle(allEnglishOptions.filter((w) => w !== english_word)).slice(0, 3);
     if (wrongAnswers.length < 3) {
       throw new Error(`Not enough distractor words in DB for ${level}.`);
     }
     const answers = shuffle([english_word, ...wrongAnswers]);
     const correct = answers.indexOf(english_word);
-    return { prompt: spanish_word, answers, correct, category };
+    return { prompt: spanish_word, answers, correct, category, germanWord: german_word };
+  });
+}
+
+export type TranslationProgress = {
+  level: Level;
+  total: number;
+  translated: number;
+  percentage: number;
+};
+
+export async function getTranslationProgress(): Promise<TranslationProgress[]> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from("questions")
+    .select("difficulty_level, german_word");
+
+  if (error) throw error;
+
+  return LEVEL_ORDER.map(level => {
+    const levelRows = data.filter(r => r.difficulty_level === level || r.difficulty_level?.startsWith(`${level}.`));
+    const total = levelRows.length;
+    const translated = levelRows.filter(r => r.german_word !== null && r.german_word !== '').length;
+    
+    return {
+      level,
+      total,
+      translated,
+      percentage: total > 0 ? Math.round((translated / total) * 100) : 0
+    };
   });
 }

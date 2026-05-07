@@ -4,6 +4,7 @@ create table if not exists public.questions (
   difficulty_level text not null,
   spanish_word text not null,
   english_word text not null,
+  german_word text,
   created_at timestamptz not null default now(),
   constraint questions_difficulty_level_not_blank check (btrim(difficulty_level) <> ''),
   constraint questions_spanish_word_not_blank check (btrim(spanish_word) <> ''),
@@ -241,6 +242,30 @@ values
 ('C2.3', 'Hacer un esfuerzo adicional', 'To go the extra mile')
 on conflict (difficulty_level, spanish_word)
 do update set english_word = excluded.english_word;
+
+-- Add German Translations for initial seed
+UPDATE public.questions SET german_word = 'Hallo' WHERE spanish_word = 'Hola';
+UPDATE public.questions SET german_word = 'Tschüss' WHERE spanish_word = 'Adiós';
+UPDATE public.questions SET german_word = 'Danke' WHERE spanish_word = 'Gracias';
+UPDATE public.questions SET german_word = 'Ja' WHERE spanish_word = 'Sí';
+UPDATE public.questions SET german_word = 'Nein' WHERE spanish_word = 'No';
+UPDATE public.questions SET german_word = 'Bitte' WHERE spanish_word = 'Por favor';
+UPDATE public.questions SET german_word = 'Guten Morgen' WHERE spanish_word = 'Buenos días';
+UPDATE public.questions SET german_word = 'Wasser' WHERE spanish_word = 'Agua';
+UPDATE public.questions SET german_word = 'Eins' WHERE spanish_word = 'Uno';
+UPDATE public.questions SET german_word = 'Zwei' WHERE spanish_word = 'Dos';
+UPDATE public.questions SET german_word = 'Freund' WHERE spanish_word = 'Amigo';
+UPDATE public.questions SET german_word = 'Katze' WHERE spanish_word = 'Gato';
+UPDATE public.questions SET german_word = 'Hund' WHERE spanish_word = 'Perro';
+UPDATE public.questions SET german_word = 'Gute Nacht' WHERE spanish_word = 'Buenas noches';
+UPDATE public.questions SET german_word = 'Entschuldigung' WHERE spanish_word = 'Perdón';
+UPDATE public.questions SET german_word = 'Wie geht es dir?' WHERE spanish_word = '¿Cómo estás?';
+UPDATE public.questions SET german_word = 'Mir geht es gut' WHERE spanish_word = 'Estoy bien';
+UPDATE public.questions SET german_word = 'Rot' WHERE spanish_word = 'Rojo';
+UPDATE public.questions SET german_word = 'Haus' WHERE spanish_word = 'Casa';
+UPDATE public.questions SET german_word = 'Buch' WHERE spanish_word = 'Libro';
+UPDATE public.questions SET german_word = 'Mutter' WHERE spanish_word = 'Madre';
+UPDATE public.questions SET german_word = 'Vater' WHERE spanish_word = 'Padre';
 
 -- END 20260423130100_seed_questions.sql
 
@@ -2543,4 +2568,3 @@ insert into public.questions (difficulty_level, category, spanish_word, english_
 -- End of combined file
 
 -- END combined_for_dashboard.sql
-
