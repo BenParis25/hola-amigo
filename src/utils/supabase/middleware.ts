@@ -7,9 +7,10 @@ type Cookie = {
     domain?: string;
     maxAge?: number;
     path?: string;
-    sameSite?: "lax" | "strict" | "none";
+    sameSite?: boolean | "lax" | "strict" | "none";
     secure?: boolean;
     httpOnly?: boolean;
+    [key: string]: unknown;
   };
 };
 
