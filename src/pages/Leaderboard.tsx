@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 type LeaderRow = {
   user_id: string;
-  user_email: string;
+  player_label: string;
   pct_correct: number | null;
   current_level: string | null;
   rounds_played: number | null;
@@ -22,7 +22,7 @@ const Leaderboard = () => {
 
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase.from("leaderboard").select("user_id, user_email, pct_correct, current_level, rounds_played");
+      const { data, error } = await supabase.from("leaderboard").select("user_id, player_label, pct_correct, current_level, rounds_played");
       if (error) {
         console.error(error);
         setRows([]);
@@ -67,7 +67,7 @@ const Leaderboard = () => {
               {rows.map((r, i) => (
                 <div key={r.user_id} className="contents">
                   <div className="col-span-1 text-center font-bold">{i + 1}</div>
-                  <div className="col-span-3 truncate">{r.user_email}</div>
+                  <div className="col-span-3 truncate">{r.player_label}</div>
                   <div className="col-span-1 text-center">{r.current_level ?? "—"}</div>
                   <div className="col-span-1 text-center">{r.pct_correct ?? "—"}%</div>
                   <div className="col-span-1 text-right">{r.rounds_played ?? 0}</div>
