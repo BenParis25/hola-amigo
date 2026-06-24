@@ -16,3 +16,5 @@ Helper scripts
   ```bash
   npm run bundle-migrations
   ```
+
+Generated on 2026-04-30 by helper scripts addition.
